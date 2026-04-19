@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Fix for environments with fetch getters -->
+    <script>
+        try {
+            const originalFetch = window.fetch;
+            Object.defineProperty(window, 'fetch', {
+                get: function() { return originalFetch; },
+                set: function(val) { console.warn('Intercepted attempt to overwrite window.fetch'); },
+                configurable: true
+            });
+        } catch (e) {
+            console.log('Fetch fix applied or failed', e);
+        }
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - Hire Boy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', 'primary-dark': '#059669', secondary: '#fbbf24', surface: '#f9fafb', lowest: '#ffffff', low: '#f3f4f6', outline: '#e5e7eb', text: '#1f2937', 'text-light': '#6b7280' }, fontFamily: { headline: ['Inter', '-apple-system', 'sans-serif'], body: ['Inter', '-apple-system', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; color: #1f2937; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        .ghost-border { border: 1px solid #e5e7eb; }
+        .ambient-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Navigation Bar -->
+    <header class="bg-lowest sticky top-0 z-50 border-b border-outline flex items-center h-[72px]">
+        <div class="max-w-7xl w-full mx-auto px-10 flex justify-between items-center">
+            <a href="index.html" class="text-[24px] font-[800] text-primary flex items-center gap-[12px] uppercase tracking-[-1px]"><span style="background: var(--primary, #10b981); color: white; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 20px" class="material-symbols-outlined">eco</span>Hire Boy</a>
+            <nav class="hidden md:flex gap-6">
+                <a href="index.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Home</a>
+                <a href="vegetables.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Vegetables</a>
+                <a href="drinks.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Drinks</a>
+                <a href="groceries.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Groceries</a>
+                <a href="organic.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Organic</a>
+            </nav>
+            <div class="flex gap-4 items-center">
+                
+                <a href="cart.html" class="flex items-center gap-2 bg-surface px-4 py-2 rounded-full border border-outline font-semibold text-sm hover:border-primary transition-colors text-gray-800">
+                    <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+                    Cart (<span id="cart-count">0</span>)
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-6 py-12 w-full">
+        <!-- Product Detail Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12" id="product-container">
+            <div class="bg-[#f3f4f6] rounded-[16px] p-8 aspect-square flex items-center justify-center relative overflow-hidden">
+                <img id="p-img" src="" alt="Product Image" class="w-full h-full object-cover rounded-xl z-10">
+            </div>
+            <div class="flex flex-col justify-center">
+                <h1 id="p-name" class="font-headline text-4xl lg:text-5xl font-bold tracking-tight mb-4">Loading...</h1>
+                <div class="flex flex-col gap-1 mb-6">
+                    <span id="p-base-price" class="text-sm font-bold text-gray-500 tracking-wide uppercase"></span>
+                    <div class="flex items-baseline gap-4">
+                        <span id="p-price" class="font-headline text-3xl font-extrabold text-primary">$0.00</span>
+                    </div>
+                </div>
+                <p id="p-desc" class="text-gray-600 text-lg leading-relaxed mb-8">Loading description...</p>
+                
+                <div class="bg-low p-6 rounded-2xl flex flex-col gap-6">
+                    <div class="flex flex-col sm:flex-row gap-4 items-end">
+                        <div class="flex flex-col gap-2 w-full sm:w-auto">
+                            <label class="font-bold text-sm text-gray-700">Quantity Required</label>
+                            <div class="flex items-stretch border-2 border-outline rounded-xl bg-white overflow-hidden h-[52px]">
+                                <input type="number" id="qty-detail" value="1" min="0.1" step="any" oninput="updateLivePrice()" class="w-24 px-4 text-center font-bold text-lg outline-none border-r-2 border-outline">
+                                <select id="unit-detail" onchange="updateLivePrice()" class="w-32 text-sm font-bold bg-transparent text-gray-700 outline-none cursor-pointer px-4">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="w-full sm:flex-1">
+                            <button onclick="addToCart()" class="w-full h-[52px] bg-primary text-white font-bold text-[16px] rounded-xl hover:bg-primary-dark transition-all flex items-center justify-center gap-3">
+                                <span class="material-symbols-outlined">add_shopping_cart</span>
+                                Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                    <div id="p-live-total" class="text-xl font-bold text-gray-900 border-t border-outline pt-4 mt-2"></div>
+                </div>
+            </div>
+        </div>
+        <div id="error-msg" class="hidden text-center text-red-500 font-bold py-12 text-2xl">Product not found.</div>
+        
+        <!-- Suggested Products -->
+        <div class="mt-20 border-t border-outline pt-12">
+            <h2 class="font-headline text-2xl font-bold mb-8">You may also like</h2>
+            <div id="suggested-grid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+        </div>
+    </main>
+
+    <footer class="bg-lowest py-12 px-6 border-t border-outline text-center text-gray-500 font-body text-sm mt-auto">
+        <p>&copy; 2026 Hire Boy. The Living Larder. Freshness delivered.</p>
+    </footer>
+
+    <script>
+        let currentProduct = null;
+
+        function calculateItemTotal(productBasePrice, pricingUnit, amount, reqUnit) {
+            let cost = 0;
+            if (pricingUnit === 'kg') {
+                if (reqUnit === 'kg') cost = productBasePrice * amount;
+                else if (reqUnit === 'g') cost = productBasePrice * (amount / 1000);
+            } else if (pricingUnit === '500g') {
+                if (reqUnit === 'kg') cost = productBasePrice * (amount * 2);
+                else if (reqUnit === 'g') cost = productBasePrice * (amount / 500);
+            } else if (pricingUnit === '100g') {
+                if (reqUnit === 'kg') cost = productBasePrice * (amount * 10);
+                else if (reqUnit === 'g') cost = productBasePrice * (amount / 100);
+            } else if (pricingUnit === 'L') {
+                if (reqUnit === 'L') cost = productBasePrice * amount;
+                else if (reqUnit === 'ml') cost = productBasePrice * (amount / 1000);
+            } else {
+                cost = productBasePrice * amount;
+            }
+            return cost;
+        }
+
+        function loadProduct() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            const prods = JSON.parse(localStorage.getItem('products') || '[]');
+            currentProduct = prods.find(p => p.id === id);
+
+            if (currentProduct) {
+                document.getElementById('p-img').src = currentProduct.img;
+                document.getElementById('p-name').textContent = currentProduct.name;
+                document.getElementById('p-desc').textContent = currentProduct.desc;
+                document.getElementById('p-price').textContent = '$' + currentProduct.price.toFixed(2);
+                
+                let pUnit = currentProduct.pricingUnit || (currentProduct.category.includes('drinks')?'L': (currentProduct.category.includes('groceries')?'packet':'kg'));
+                document.getElementById('p-base-price').textContent = 'Base Price: $' + currentProduct.price.toFixed(2) + ' per ' + pUnit;
+
+                const unitS = document.getElementById('unit-detail');
+                if(pUnit === 'kg' || pUnit === '100g' || pUnit === '500g') {
+                    unitS.innerHTML = '<option value="kg">kg</option><option value="g">g</option>';
+                } else if(pUnit === 'L') {
+                    unitS.innerHTML = '<option value="L">Liters</option><option value="ml">ml</option>';
+                } else {
+                    unitS.innerHTML = '<option value="packet">packet(s)</option>';
+                }
+                
+                const defVal = (pUnit === 'packet' || pUnit === 'L' || pUnit === 'kg') ? '1' : (pUnit === '500g' ? '500' : '500');
+                document.getElementById('qty-detail').value = defVal;
+
+                // Load suggestions
+                let suggested = prods.filter(p => p.category === currentProduct.category && p.id !== currentProduct.id);
+                // Fill if less than 4
+                if (suggested.length < 4) {
+                    const others = prods.filter(p => !suggested.includes(p) && p.id !== currentProduct.id);
+                    suggested = suggested.concat(others.slice(0, 4 - suggested.length));
+                }
+                
+                const grid = document.getElementById('suggested-grid');
+                grid.innerHTML = suggested.slice(0,4).map(p => {
+                    let sUnit = p.pricingUnit || (p.category.includes('drinks')?'L': (p.category.includes('groceries')?'packet':'kg'));
+                    return `
+                        <a href="product.html?id=${p.id}" class="bg-lowest rounded-[16px] p-4 border border-outline flex flex-col gap-3 group hover:ambient-shadow transition-shadow pb-3">
+                            <div class="w-full aspect-square bg-low rounded-xl flex items-center justify-center overflow-hidden">
+                                <img src="${p.img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="${p.name}">
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-[15px] mb-1 leading-tight text-gray-900">${p.name}</h4>
+                                <p class="text-[12px] text-gray-500 capitalize">${p.category.replace(/ /g, ', ')}</p>
+                            </div>
+                            <div class="mt-auto flex justify-between items-end">
+                                <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wide px-1">Base: $${p.price.toFixed(2)} per ${sUnit}</span>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+
+                updateLivePrice();
+            } else {
+                document.getElementById('product-container').classList.add('hidden');
+                document.getElementById('error-msg').classList.remove('hidden');
+            }
+        }
+
+        function updateLivePrice() {
+            if(!currentProduct) return;
+            const amtBox = document.getElementById('qty-detail');
+            const unitBox = document.getElementById('unit-detail');
+            const previewBox = document.getElementById('p-live-total');
+            const priceEl = document.getElementById('p-price');
+
+            const amt = parseFloat(amtBox.value) || 0;
+            const reqUnit = unitBox.value;
+            const pUnit = currentProduct.pricingUnit || (currentProduct.category.includes('drinks')?'L': (currentProduct.category.includes('groceries')?'packet':'kg'));
+
+            const cost = calculateItemTotal(currentProduct.price, pUnit, amt, reqUnit);
+            
+            if (amt > 0) {
+                previewBox.innerText = 'Total Selection: $' + cost.toFixed(2);
+                priceEl.innerText = '$' + cost.toFixed(2);
+            } else {
+                previewBox.innerText = 'Total Selection: $0.00';
+                priceEl.innerText = '$0.00';
+            }
+        }
+
+        // Add selected product to cart
+        function addToCart() {
+            if(!currentProduct) return;
+            
+            let amount = parseFloat(document.getElementById('qty-detail').value) || 1;
+            let selUnit = document.getElementById('unit-detail').value;
+            let fallbackPUnit = currentProduct.category.includes('drinks') ? 'L' : (currentProduct.category.includes('groceries') ? 'packet' : 'kg');
+
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const existing = cart.find(i => i.id === currentProduct.id && i.reqUnit === selUnit);
+            if (existing) {
+                existing.amount += amount;
+            } else {
+                cart.push({ ...currentProduct, pricingUnit: currentProduct.pricingUnit || fallbackPUnit, amount: amount, reqUnit: selUnit });
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();// Visual feedback
+            const btn = document.querySelector('button[onclick="addToCart()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined">check</span> Added!';
+            btn.classList.replace('from-primary', 'from-secondary');
+            btn.classList.replace('to-green-700', 'to-orange-500');
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('from-secondary', 'from-primary');
+                btn.classList.replace('to-orange-500', 'to-green-700');
+            }, 1000);
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countEl = document.getElementById('cart-count');
+            if(countEl) countEl.textContent = cart.length;
+        }
+
+        // Initialize
+        loadProduct();
+        updateCartCount();
+    </script>
+
+    <!-- User Request: Footer added to every page with specific text and contacts -->
+    <footer class="bg-lowest border-t border-outline mt-16 pt-12 pb-8 w-full shrink-0">
+        <div class="max-w-7xl mx-auto px-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <!-- Left Details -->
+                <div class="text-center md:text-left">
+                    <p class="text-gray-500 text-sm mb-2 font-medium">Curating the finest provisions for the modern pantry. Delivered fresh, always.</p>
+                    <p class="text-gray-400 text-xs tracking-wide">© 2024 The Digital Orchard. Freshness Delivered.</p>
+                </div>
+                <!-- Right Links -->
+                <div class="flex flex-wrap justify-center gap-6 text-sm font-semibold text-gray-600">
+                    <a href="#" class="hover:text-primary transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-primary transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-primary transition-colors">Shipping Info</a>
+                    <a href="#" onclick="alert('Customer Support: 0773811326'); event.preventDefault();" class="hover:text-primary transition-colors">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

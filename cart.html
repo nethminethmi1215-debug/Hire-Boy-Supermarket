@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Fix for environments with fetch getters -->
+    <script>
+        try {
+            const originalFetch = window.fetch;
+            Object.defineProperty(window, 'fetch', {
+                get: function() { return originalFetch; },
+                set: function(val) { console.warn('Intercepted attempt to overwrite window.fetch'); },
+                configurable: true
+            });
+        } catch (e) {
+            console.log('Fetch fix applied or failed', e);
+        }
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - Hire Boy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', 'primary-dark': '#059669', secondary: '#fbbf24', surface: '#f9fafb', lowest: '#ffffff', low: '#f3f4f6', outline: '#e5e7eb', text: '#1f2937', 'text-light': '#6b7280' }, fontFamily: { headline: ['Inter', '-apple-system', 'sans-serif'], body: ['Inter', '-apple-system', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; color: #1f2937; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        .ghost-border { border: 1px solid #e5e7eb; }
+        .ambient-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Navigation Bar -->
+    <header class="bg-lowest sticky top-0 z-50 border-b border-outline flex items-center h-[72px]">
+        <div class="max-w-7xl w-full mx-auto px-10 flex justify-between items-center">
+            <a href="index.html" class="text-[24px] font-[800] text-primary flex items-center gap-[12px] uppercase tracking-[-1px]"><span class="material-symbols-outlined icon-fill">eco</span>Hire Boy</a>
+            <nav class="hidden md:flex gap-6">
+                <a href="index.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Home</a>
+                <a href="vegetables.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Vegetables</a>
+                <a href="drinks.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Drinks</a>
+                <a href="groceries.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Groceries</a>
+                <a href="organic.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Organic</a>
+            </nav>
+            <div class="flex gap-4 items-center">
+                
+                <a href="cart.html" class="flex items-center gap-2 bg-surface px-4 py-2 rounded-full border border-outline font-semibold text-sm hover:border-primary transition-colors text-gray-800">
+                    <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+                    Cart (<span id="cart-count">0</span>)
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-6 py-12 w-full">
+        <h1 class="font-headline text-4xl font-bold mb-8">Shopping Cart</h1>
+        <div class="flex flex-col lg:flex-row gap-12">
+            <!-- Cart Items -->
+            <div class="flex-grow">
+                <div id="cart-items" class="space-y-6">
+                    <!-- Items injected here -->
+                </div>
+            </div>
+            
+            <!-- Summary Sidebar -->
+            <div class="w-full lg:w-[380px] shrink-0">
+                <div class="bg-lowest p-8 rounded-3xl ghost-border ambient-shadow sticky top-32">
+                    <h2 class="font-headline text-2xl font-bold mb-6">Order Summary</h2>
+                    <div class="space-y-4 text-gray-600 mb-6">
+                        <div class="flex justify-between">
+                            <span>Subtotal</span>
+                            <span id="summary-subtotal" class="font-semibold text-gray-900">$0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tax (8%)</span>
+                            <span id="summary-tax" class="font-semibold text-gray-900">$0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Delivery Fee</span>
+                            <span id="summary-delivery" class="font-semibold text-gray-900">$0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Service Charge</span>
+                            <span id="summary-service" class="font-semibold text-gray-900">$0.00</span>
+                        </div>
+                        <div class="h-px w-full bg-outline my-4"></div>
+                        <div class="flex justify-between text-xl font-bold text-primary">
+                            <span>Total</span>
+                            <span id="summary-total">$0.00</span>
+                        </div>
+                    </div>
+                    <a href="checkout.html" id="checkout-btn" class="block w-full bg-primary text-white text-center py-4 rounded-xl font-bold text-[16px] hover:bg-primary-dark transition-colors">Proceed to Checkout</a>
+                    <a href="index.html" class="block w-full text-center mt-4 text-primary font-semibold hover:underline">Continue Shopping</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-lowest py-12 px-6 border-t border-outline text-center text-gray-500 font-body text-sm mt-auto">
+        <p>&copy; 2026 Hire Boy. The Living Larder. Freshness delivered.</p>
+    </footer>
+
+    <script>
+        function updateCartCount() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let count = cart.reduce((acc, item) => acc + item.qty, 0);
+            document.getElementById('cart-count').innerText = count;
+        }
+
+        
+        function calculateItemTotal(productBasePrice, pricingUnit, amount, reqUnit) {
+            let cost = 0;
+            if (pricingUnit === 'kg') {
+                if (reqUnit === 'kg') cost = productBasePrice * amount;
+                else if (reqUnit === 'g') cost = productBasePrice * (amount / 1000);
+            } else if (pricingUnit === '100g') {
+                if (reqUnit === 'kg') cost = productBasePrice * (amount * 10);
+                else if (reqUnit === 'g') cost = productBasePrice * (amount / 100);
+            } else if (pricingUnit === 'L') {
+                if (reqUnit === 'L') cost = productBasePrice * amount;
+                else if (reqUnit === 'ml') cost = productBasePrice * (amount / 1000);
+            } else {
+                cost = productBasePrice * amount;
+            }
+            return cost;
+        }
+
+        function loadCart() {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            let products = JSON.parse(localStorage.getItem('products')) || [];
+            let cartItemsDiv = document.getElementById('cart-items');
+            
+            const subtotalElement = document.getElementById('summary-subtotal');
+            const taxElement = document.getElementById('summary-tax');
+            const totalElement = document.getElementById('summary-total');
+            const checkoutBtn = document.getElementById('checkout-btn');
+
+            if (cart.length === 0) {
+                cartItemsDiv.innerHTML = `
+                    <div class="text-center py-16 bg-lowest rounded-3xl ghost-border">
+                        <span class="material-symbols-outlined text-[64px] text-gray-300 mb-4 block">remove_shopping_cart</span>
+                        <p class="text-gray-500 font-headline text-xl">Your cart is empty</p>
+                        <a href="index.html" class="inline-block mt-6 bg-primary text-white font-bold py-3 px-8 rounded-xl hover:bg-primary-dark transition-colors">Start Shopping</a>
+                    </div>
+                `;
+                subtotalElement.innerText = '$0.00';
+                taxElement.innerText = '$0.00';
+                totalElement.innerText = '$0.00';
+                checkoutBtn.classList.add('opacity-50', 'pointer-events-none');
+                return;
+            } else {
+                checkoutBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+
+            let subtotal = 0;
+            let html = '';
+
+            cart.forEach((cartItem, idx) => {
+                let product = products.find(p => p.id === cartItem.id);
+                if (product) {
+                    let fallbackPUnit = product.category.includes('drinks') ? 'L' : (product.category.includes('groceries') ? 'packet' : 'kg');
+                    let pUnit = cartItem.pricingUnit || fallbackPUnit;
+                    let itemTotal = calculateItemTotal(product.price, pUnit, cartItem.amount, cartItem.reqUnit);
+                    subtotal += itemTotal;
+                    
+                    html += `
+                        <div class="bg-lowest rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-6 ghost-border ambient-shadow relative mb-4">
+                            <img src="${product.img}" alt="${product.name}" class="w-24 h-24 object-cover rounded-xl bg-low shrink-0">
+                            <div class="flex-grow text-center sm:text-left">
+                                <h3 class="font-headline text-lg font-bold">${product.name}</h3>
+                                <p class="text-primary font-bold mt-1">Base Price: $${product.price.toFixed(2)} per ${pUnit}</p>
+                            </div>
+                            <div class="flex items-center gap-2 bg-low px-3 py-2 rounded-xl shrink-0 border border-outline">
+                                <button onclick="changeQty(${idx}, -1)" class="text-gray-500 hover:text-primary font-bold text-xl w-6 h-6 flex items-center justify-center">-</button>
+                                <input type="number" onchange="directUpdateQty(${idx}, this.value)" value="${cartItem.amount}" step="any" min="0.1" class="font-bold w-16 text-center bg-transparent border-none outline-none appearance-none px-1">
+                                <span class="font-bold text-sm text-gray-500 text-left w-8">${cartItem.reqUnit}</span>
+                                <button onclick="changeQty(${idx}, 1)" class="text-gray-500 hover:text-primary font-bold text-xl w-6 h-6 flex items-center justify-center">+</button>
+                            </div>
+                            <div class="shrink-0 w-24 text-center sm:text-right font-headline font-bold text-lg text-primary">
+                                $${itemTotal.toFixed(2)}
+                            </div>
+                            <button onclick="removeItem(${idx})" class="absolute top-4 right-4 sm:relative sm:top-0 sm:right-0 p-2 text-gray-400 hover:text-red-500 transition-colors" title="Remove item">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+
+            cartItemsDiv.innerHTML = html;
+
+            const DELIVERY_FEE = 5.00;
+            const SERVICE_CHARGE = 2.00;
+            const TAX_RATE = 0.08;
+
+            let tax = subtotal * TAX_RATE;
+            let total = subtotal + tax + DELIVERY_FEE + SERVICE_CHARGE;
+
+            subtotalElement.innerText = '$' + subtotal.toFixed(2);
+            taxElement.innerText = '$' + tax.toFixed(2);
+            document.getElementById('summary-delivery').innerText = '$' + DELIVERY_FEE.toFixed(2);
+            document.getElementById('summary-service').innerText = '$' + SERVICE_CHARGE.toFixed(2);
+            totalElement.innerText = '$' + total.toFixed(2);
+        }
+
+        function changeQty(idx, delta) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            if(cart[idx]) {
+                let step = 1;
+                if (cart[idx].reqUnit === 'g' || cart[idx].reqUnit === 'ml') step = 50;
+                else if (cart[idx].reqUnit === 'kg' || cart[idx].reqUnit === 'L') step = 0.5;
+                
+                cart[idx].amount += (delta * step);
+                cart[idx].amount = parseFloat(cart[idx].amount.toFixed(2));
+                
+                if (cart[idx].amount <= 0) cart.splice(idx, 1);
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateCartCount();
+                loadCart();
+            }
+        }
+
+        function directUpdateQty(idx, val) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            if(cart[idx]) {
+                let num = parseFloat(val);
+                if(num > 0) {
+                    cart[idx].amount = num;
+                } else {
+                    cart.splice(idx, 1);
+                }
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateCartCount();
+                loadCart();
+            }
+        }
+
+        function removeItem(idx) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart.splice(idx, 1);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            loadCart();
+        }
+
+        // Initialize display
+        updateCartCount();
+        loadCart();
+    </script>
+
+    <!-- User Request: Footer added to every page with specific text and contacts -->
+    <footer class="bg-lowest border-t border-outline mt-16 pt-12 pb-8 w-full shrink-0">
+        <div class="max-w-7xl mx-auto px-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <!-- Left Details -->
+                <div class="text-center md:text-left">
+                    <p class="text-gray-500 text-sm mb-2 font-medium">Curating the finest provisions for the modern pantry. Delivered fresh, always.</p>
+                    <p class="text-gray-400 text-xs tracking-wide">© 2024 The Digital Orchard. Freshness Delivered.</p>
+                </div>
+                <!-- Right Links -->
+                <div class="flex flex-wrap justify-center gap-6 text-sm font-semibold text-gray-600">
+                    <a href="#" class="hover:text-primary transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-primary transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-primary transition-colors">Shipping Info</a>
+                    <a href="#" onclick="alert('Customer Support: 0773811326'); event.preventDefault();" class="hover:text-primary transition-colors">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Fix for environments with fetch getters -->
+    <script>
+        try {
+            const originalFetch = window.fetch;
+            Object.defineProperty(window, 'fetch', {
+                get: function() { return originalFetch; },
+                set: function(val) { console.warn('Intercepted attempt to overwrite window.fetch'); },
+                configurable: true
+            });
+        } catch (e) {
+            console.log('Fetch fix applied or failed', e);
+        }
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Hire Boy</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#10b981', 'primary-dark': '#059669', secondary: '#fbbf24', surface: '#f9fafb', lowest: '#ffffff', low: '#f3f4f6', outline: '#e5e7eb', text: '#1f2937', 'text-light': '#6b7280' }, fontFamily: { headline: ['Inter', '-apple-system', 'sans-serif'], body: ['Inter', '-apple-system', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; color: #1f2937; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+        .ghost-border { border: 1px solid #e5e7eb; }
+        .ambient-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Navigation Bar -->
+    <header class="bg-lowest sticky top-0 z-50 border-b border-outline flex items-center h-[72px]">
+        <div class="max-w-7xl w-full mx-auto px-10 flex justify-between items-center">
+            <a href="index.html" class="text-[24px] font-[800] text-primary flex items-center gap-[12px] uppercase tracking-[-1px]"><span class="material-symbols-outlined icon-fill">eco</span>Hire Boy</a>
+            <nav class="hidden md:flex gap-6">
+                <a href="index.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Home</a>
+                <a href="vegetables.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Vegetables</a>
+                <a href="drinks.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Drinks</a>
+                <a href="groceries.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Groceries</a>
+                <a href="organic.html" class="font-semibold text-[14px] text-gray-800 hover:text-primary transition-colors">Organic</a>
+            </nav>
+            <div class="flex gap-4 items-center">
+                <a href="admin.html" class="text-xs font-semibold bg-low px-3 py-1.5 rounded-full text-primary flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>Admin</a>
+                <a href="cart.html" class="flex items-center gap-2 bg-surface px-4 py-2 rounded-full border border-outline font-semibold text-sm hover:border-primary transition-colors text-gray-800">
+                    <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+                    Cart (<span id="cart-count">0</span>)
+                </a>
+            </div>
+        </div>
+    </header>
+
+        <!-- Main Content -->
+        <div id="main-admin-content" class="hidden">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <h1 class="font-headline text-4xl font-bold">Admin Dashboard</h1>
+                <div class="flex gap-4">
+                    <button onclick="switchTab('products')" id="tab-products" class="px-6 py-2 rounded-xl font-bold transition-colors bg-gray-200 text-gray-700">Products</button>
+                    <button onclick="switchTab('orders')" id="tab-orders" class="px-6 py-2 rounded-xl font-bold transition-colors bg-gray-200 text-gray-700">Orders</button>
+                    <button onclick="openModal()" id="add-product-btn" class="bg-primary text-white px-4 py-2 rounded-xl font-bold hover:bg-primary-dark transition-colors flex items-center gap-2 text-[14px]">
+                        <span class="material-symbols-outlined">add</span> Add Product
+                    </button>
+                </div>
+            </div>
+
+            <!-- Products View -->
+            <div id="view-products" class="bg-lowest rounded-3xl p-8 ghost-border ambient-shadow overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-outline text-gray-500 font-semibold text-sm">
+                            <th class="py-3 px-4">Image</th>
+                            <th class="py-3 px-4">Name</th>
+                            <th class="py-3 px-4">Category</th>
+                            <th class="py-3 px-4">Price</th>
+                            <th class="py-3 px-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table">
+                        <!-- Products injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Orders View -->
+            <div id="view-orders" class="hidden bg-lowest rounded-3xl p-8 ghost-border ambient-shadow overflow-x-auto">
+                <div class="flex gap-4 mb-6">
+                    <button onclick="loadOrders('All')" class="px-4 py-2 bg-low rounded-lg font-semibold text-sm text-gray-700 hover:bg-gray-200">All</button>
+                    <button onclick="loadOrders('Pending')" class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-semibold text-sm hover:bg-orange-200">Pending</button>
+                    <button onclick="loadOrders('Delivering')" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm hover:bg-blue-200">Out for Delivery</button>
+                    <button onclick="loadOrders('Completed')" class="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold text-sm hover:bg-green-200">Completed</button>
+                </div>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-outline text-gray-500 font-semibold text-sm">
+                            <th class="py-3 px-4">Order ID</th>
+                            <th class="py-3 px-4">Date</th>
+                            <th class="py-3 px-4">Items</th>
+                            <th class="py-3 px-4">Status</th>
+                            <th class="py-3 px-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table">
+                        <!-- Orders injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 bg-low flex justify-center items-center z-[200]">
+        <div class="bg-lowest rounded-3xl p-10 max-w-sm w-full ambient-shadow ghost-border">
+            <div class="text-center mb-8">
+                <span style="background: var(--primary, #10b981); color: white; width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 28px" class="material-symbols-outlined mb-4">admin_panel_settings</span>
+                <h2 class="font-headline text-2xl font-bold text-gray-900">Admin Login</h2>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <input type="text" id="admin-user" placeholder="Username" required class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                </div>
+                <div>
+                    <input type="password" id="admin-pass" placeholder="Password" required class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                </div>
+                <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-dark transition-colors mt-2">Login</button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm text-center mt-4 hidden">Invalid Credentials.</p>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal" class="fixed inset-0 bg-black/50 backdrop-blur-[2px] hidden items-center justify-center z-[100] px-4">
+        <div class="bg-lowest max-w-xl w-full rounded-3xl p-8 ambient-shadow relative max-h-[90vh] overflow-y-auto">
+            <h2 id="modal-title" class="font-headline text-2xl font-bold mb-6">Add Product</h2>
+            <form id="product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="prod-id">
+                <div class="space-y-4 mb-8">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-2">Product Name</label>
+                        <input type="text" id="prod-name" required class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-2">Category (space separated)</label>
+                            <input type="text" id="prod-cat" required placeholder="e.g. vegetables organic" class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-2">Unit Type for Price</label>
+                            <select id="prod-punit" required class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary mb-4">
+                                <option value="kg">1 Kilogram (kg)</option>
+                                <option value="100g">100 Grams (100g)</option>
+                                <option value="500g">500 Grams (500g)</option>
+                                <option value="L">1 Liter (L)</option>
+                                <option value="packet">Packet / Piece</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-600 mb-2">Price ($)</label>
+                            <input type="number" step="0.01" id="prod-price" required class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-2">Image URL</label>
+                        <input type="url" id="prod-img" required class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-2">Description</label>
+                        <textarea id="prod-desc" required rows="3" class="w-full bg-low border border-outline rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-4 justify-end">
+                    <button type="button" onclick="closeModal()" class="px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-low transition-colors">Cancel</button>
+                    <button type="submit" class="bg-primary text-lowest px-6 py-3 rounded-xl font-bold hover:bg-green-800 transition-colors">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="order-modal" class="fixed inset-0 bg-black/50 backdrop-blur-[2px] hidden items-center justify-center z-[100] px-4">
+        <div class="bg-lowest max-w-2xl w-full rounded-3xl p-8 ambient-shadow relative max-h-[90vh] overflow-y-auto flex flex-col">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="font-headline text-2xl font-bold">Order Details</h2>
+                <button onclick="closeOrderModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-low text-gray-500 hover:text-gray-900 transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            
+            <div class="flex justify-between items-center bg-low p-4 rounded-xl mb-6">
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold mb-1">ORDER ID</p>
+                    <p id="modal-order-id" class="font-bold text-gray-900 leading-none">-</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-gray-500 font-semibold mb-1">DATE</p>
+                    <p id="modal-order-date" class="font-bold text-gray-900 leading-none">-</p>
+                </div>
+            </div>
+
+            <div class="flex-grow overflow-auto mb-6">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-outline text-gray-500 font-semibold text-xs">
+                            <th class="py-2 px-1">Product</th>
+                            <th class="py-2 px-1 text-center">Qty</th>
+                            <th class="py-2 px-1 text-right">Unit Price</th>
+                            <th class="py-2 px-1 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-order-items">
+                        <!-- Items injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="border-t border-outline pt-4 flex justify-between items-center mt-auto">
+                <span class="font-bold text-gray-500 uppercase text-sm tracking-wider">Total Amount</span>
+                <span id="modal-order-total" class="font-headline text-3xl font-extrabold text-primary">$0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Quick Overlay -->
+    <div id="quick-overlay" class="fixed bottom-6 right-6 bg-[#1f2937] text-white py-3 px-5 rounded-[12px] flex items-center gap-3 text-[13px] font-[600] shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] z-50 hidden">
+        <div class="w-2 h-2 rounded-full bg-[#34d399] shadow-[0_0_8px_#34d399]"></div>
+        <span>Admin Panel Active</span>
+        <span class="opacity-30 mx-1">|</span>
+        <span id="pending-orders-count">0 Orders Pending</span>
+    </div>
+
+    <footer class="bg-lowest py-12 px-6 border-t border-outline text-center text-gray-500 font-body text-sm mt-auto">
+        <p>&copy; 2026 Hire Boy. The Living Larder. Freshness delivered.</p>
+    </footer>
+
+    <script>
+        function checkAuth() {
+            if(sessionStorage.getItem('adminAuth') === 'true') {
+                document.getElementById('login-overlay').classList.add('hidden');
+                document.getElementById('main-admin-content').classList.remove('hidden');
+                document.getElementById('quick-overlay').classList.remove('hidden');
+                switchTab('products');
+                updatePendingCount();
+            } else {
+                document.getElementById('quick-overlay').classList.add('hidden');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('admin-user').value;
+            const pass = document.getElementById('admin-pass').value;
+            // Expected hardcoded credentials logic inside local store 
+            if(user === 'admin' && pass === 'admin123') {
+                sessionStorage.setItem('adminAuth', 'true');
+                checkAuth();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function switchTab(tab) {
+            const vProd = document.getElementById('view-products');
+            const vOrd = document.getElementById('view-orders');
+            const bProd = document.getElementById('tab-products');
+            const bOrd = document.getElementById('tab-orders');
+            const addBtn = document.getElementById('add-product-btn');
+
+            if(tab === 'products') {
+                vProd.classList.remove('hidden');
+                vOrd.classList.add('hidden');
+                bProd.classList.replace('bg-gray-200', 'bg-primary');
+                bProd.classList.replace('text-gray-700', 'text-white');
+                bOrd.classList.replace('bg-primary', 'bg-gray-200');
+                bOrd.classList.replace('text-white', 'text-gray-700');
+                addBtn.classList.remove('hidden');
+                loadProducts();
+            } else {
+                vProd.classList.add('hidden');
+                vOrd.classList.remove('hidden');
+                bOrd.classList.replace('bg-gray-200', 'bg-primary');
+                bOrd.classList.replace('text-gray-700', 'text-white');
+                bProd.classList.replace('bg-primary', 'bg-gray-200');
+                bProd.classList.replace('text-white', 'text-gray-700');
+                addBtn.classList.add('hidden');
+                loadOrders('All');
+            }
+        }
+
+        function updatePendingCount() {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const pending = orders.filter(o => o.status === 'Processing' || o.status === 'Pending').length;
+            document.getElementById('pending-orders-count').textContent = `${pending} Orders Pending`;
+        }
+
+        function loadOrders(filter) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const tbody = document.getElementById('orders-table');
+            
+            let filteredOrders = orders;
+            if(filter === 'Pending') filteredOrders = orders.filter(o => o.status === 'Processing' || o.status === 'Pending');
+            if(filter === 'Delivering') filteredOrders = orders.filter(o => o.status === 'Delivering');
+            if(filter === 'Completed') filteredOrders = orders.filter(o => o.status === 'Completed');
+
+            if (filteredOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-gray-500">No ${filter.toLowerCase()} orders found.</td></tr>`;
+                return;
+            }
+
+            filteredOrders.reverse(); // Newest first
+            
+            tbody.innerHTML = filteredOrders.map(o => {
+                const totalItems = o.items.reduce((s, i) => s + i.qty, 0);
+                const isPending = (o.status === 'Processing' || o.status === 'Pending');
+                const isDelivering = (o.status === 'Delivering');
+                
+                let badgeClass = 'bg-green-100 text-green-700';
+                let displayStatus = 'Completed';
+                if (isPending) {
+                    badgeClass = 'bg-orange-100 text-orange-700';
+                    displayStatus = 'Pending';
+                } else if (isDelivering) {
+                    badgeClass = 'bg-blue-100 text-blue-700';
+                    displayStatus = 'Delivering';
+                }
+
+                let actionBtnHtml = '';
+                if (isPending) {
+                    actionBtnHtml = `<button onclick="deliverOrder('${o.id}')" class="text-xs font-bold bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors">Mark Delivery</button>`;
+                } else if (isDelivering) {
+                    actionBtnHtml = `<button onclick="completeOrder('${o.id}')" class="text-xs font-bold bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">Mark Completed</button>`;
+                } else {
+                    actionBtnHtml = `<span class="text-xs text-gray-400 font-bold ml-2">Done</span>`;
+                }
+
+                return `
+                <tr class="border-b border-outline hover:bg-low transition-colors">
+                    <td class="py-4 px-4 font-headline font-bold text-gray-900">${o.id}</td>
+                    <td class="py-4 px-4 text-gray-600 text-sm">${new Date(o.date).toLocaleString()}</td>
+                    <td class="py-4 px-4 text-gray-600 text-sm">${totalItems} items</td>
+                    <td class="py-4 px-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${badgeClass}">${displayStatus}</span></td>
+                    <td class="py-4 px-4 text-right flex justify-end gap-2 items-center h-full mt-2">
+                        <button onclick="viewOrder('${o.id}')" class="text-xs font-bold bg-low text-gray-700 hover:text-primary border border-outline px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">visibility</span> View</button>
+                        ${actionBtnHtml}
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function deliverOrder(id) {
+            if(confirm('Mark this order as out for delivery?')) {
+                let orders = JSON.parse(localStorage.getItem('orders')) || [];
+                const idx = orders.findIndex(o => o.id === id);
+                if(idx > -1) {
+                    orders[idx].status = 'Delivering';
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    loadOrders('All');
+                    updatePendingCount();
+                }
+            }
+        }
+
+        function completeOrder(id) {
+            if(confirm('Mark this order as complete?')) {
+                let orders = JSON.parse(localStorage.getItem('orders')) || [];
+                const idx = orders.findIndex(o => o.id === id);
+                if(idx > -1) {
+                    orders[idx].status = 'Completed';
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    loadOrders('All');
+                    updatePendingCount();
+                }
+            }
+        }
+
+        
+        function calculateItemTotal(productBasePrice, pricingUnit, amount, reqUnit) {
+            let cost = 0;
+            if (pricingUnit === 'kg') {
+                if (reqUnit === 'kg') cost = productBasePrice * amount;
+                else if (reqUnit === 'g') cost = productBasePrice * (amount / 1000);
+            } else if (pricingUnit === '100g') {
+                if (reqUnit === 'kg') cost = productBasePrice * (amount * 10);
+                else if (reqUnit === 'g') cost = productBasePrice * (amount / 100);
+            } else if (pricingUnit === 'L') {
+                if (reqUnit === 'L') cost = productBasePrice * amount;
+                else if (reqUnit === 'ml') cost = productBasePrice * (amount / 1000);
+            } else {
+                cost = productBasePrice * amount;
+            }
+            return cost;
+        }
+
+        function viewOrder(id) {
+            const orders = JSON.parse(localStorage.getItem('orders')) || [];
+            const order = orders.find(o => o.id === id);
+            
+            if(!order) return;
+
+            document.getElementById('modal-order-id').innerText = order.id;
+            document.getElementById('modal-order-date').innerText = new Date(order.date).toLocaleString();
+            
+            if (order.customer) {
+                document.getElementById('modal-order-customer').innerHTML = `
+                    <p><strong>Customer:</strong> ${order.customer.name}</p>
+                    <p><strong>Phone:</strong> <a href="tel:${order.customer.phone}" class="text-primary hover:underline">${order.customer.phone}</a></p>
+                    <p><strong>Address:</strong> ${order.customer.address}</p>\n                    <div class="mt-3"><span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-bold uppercase tracking-wider border border-yellow-200">Payment: ${order.paymentMethod || "Unknown"}</span></div>
+                `;
+                document.getElementById('modal-order-customer').classList.remove('hidden');
+            } else {
+                document.getElementById('modal-order-customer').classList.add('hidden');
+            }
+
+
+            let modalItemsHtml = '';
+            let orderTotal = 0;
+
+            order.items.forEach(item => {
+                const itemName = item.name || "Unknown Product";
+                const itemImg = item.img || "https://dummyimage.com/100x100/e5e7eb/6b7280.png&text=X";
+                const itemPrice = item.price || 0; 
+                const fallbackPUnit = itemName.toLowerCase().includes('drink') ? 'L' : (itemName.toLowerCase().includes('grocer')||itemName.toLowerCase().includes('pasta') ? 'packet' : 'kg');
+                const pUnit = item.pricingUnit || fallbackPUnit;
+
+                // The item amount now is item.amount instead of item.qty
+                const amt = item.amount || item.qty || 1;
+                const rUnit = item.reqUnit || '';
+
+                const lineTotal = calculateItemTotal(itemPrice, pUnit, amt, rUnit || pUnit);
+                orderTotal += lineTotal;
+
+                modalItemsHtml += `
+                    <tr class="border-b border-outline">
+                        <td class="py-3 px-1 flex items-center gap-3">
+                            <img src="${itemImg}" class="w-10 h-10 rounded object-cover bg-surface shrink-0">
+                            <div>
+                                <span class="font-semibold text-gray-900 text-sm block">${itemName}</span>
+                                <span class="text-[11px] text-gray-500">${itemPrice.toFixed(2)} / ${pUnit}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-1 text-center font-bold text-gray-700">${amt} ${rUnit}</td>
+                        <td class="py-3 px-1 text-right font-bold text-gray-900">${lineTotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            // Add Tax
+            const tax = orderTotal * 0.08;
+            const finalTotalFallback = orderTotal + tax;
+            
+            // Render Tax Row & Additional Fees
+            let finalTax = tax;
+            let finalDelivery = 0;
+            let finalService = 0;
+            let finalTotal = finalTotalFallback;
+
+            // If we have saved fees from checkout:
+            if(order.fees) {
+                finalTax = order.fees.tax || tax;
+                finalDelivery = order.fees.delivery || 0;
+                finalService = order.fees.service || 0;
+                finalTotal = order.fees.total || finalTotalFallback;
+            }
+
+            modalItemsHtml += `
+                    <tr class="border-t border-outline">
+                        <td colspan="3" class="py-3 px-1 text-right text-gray-500 font-semibold text-sm">Subtotal</td>
+                        <td class="py-3 px-1 text-right font-bold text-gray-900">$${orderTotal.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="py-1 px-1 text-right text-gray-500 font-semibold text-sm">Tax (8%)</td>
+                        <td class="py-1 px-1 text-right font-bold text-gray-900">$${finalTax.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="py-1 px-1 text-right text-gray-500 font-semibold text-sm">Delivery Fee</td>
+                        <td class="py-1 px-1 text-right font-bold text-gray-900">$${finalDelivery.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="py-1 px-1 text-right text-gray-500 font-semibold text-sm">Service Charge</td>
+                        <td class="py-1 px-1 text-right font-bold text-gray-900">$${finalService.toFixed(2)}</td>
+                    </tr>
+            `;
+
+            document.getElementById('modal-order-items').innerHTML = modalItemsHtml;
+            document.getElementById('modal-order-total').innerText = '$' + finalTotal.toFixed(2);
+
+            const modal = document.getElementById('order-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeOrderModal() {
+            const modal = document.getElementById('order-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const countEl = document.getElementById('cart-count');
+            if(countEl) countEl.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
+        }
+
+        function loadProducts() {
+            const prods = JSON.parse(localStorage.getItem('products') || '[]');
+            const tbody = document.getElementById('admin-table');
+            
+            if (prods.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-500">No products found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = prods.map(p => `
+                <tr class="border-b border-outline hover:bg-low transition-colors">
+                    <td class="py-4 px-4 w-24">
+                        <img src="${p.img}" class="w-16 h-16 object-cover rounded-lg bg-surface">
+                    </td>
+                    <td class="py-4 px-4 font-headline font-bold text-gray-900">${p.name}</td>
+                    <td class="py-4 px-4 text-gray-600 text-sm">${p.category}</td>
+                    <td class="py-4 px-4 font-semibold text-primary">$${p.price.toFixed(2)} <span class="text-xs text-gray-500 font-normal">/ ${p.pricingUnit || 'kg'}</span></td>
+                    <td class="py-4 px-4">
+                        <div class="flex gap-2">
+                            <button onclick="editProduct('${p.id}')" class="p-2 text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-surface">
+                                <span class="material-symbols-outlined text-[20px]">edit</span>
+                            </button>
+                            <button onclick="deleteProduct('${p.id}')" class="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-surface">
+                                <span class="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openModal() {
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-id').value = '';
+            document.getElementById('modal-title').textContent = 'Add Product';
+            document.getElementById('product-modal').classList.remove('hidden');
+            document.getElementById('product-modal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+            document.getElementById('product-modal').classList.remove('flex');
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('prod-id').value || Date.now().toString();
+            const name = document.getElementById('prod-name').value;
+            const cat = document.getElementById('prod-cat').value;
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const img = document.getElementById('prod-img').value;
+            const pUnit = document.getElementById('prod-punit').value;
+            const desc = document.getElementById('prod-desc').value;
+
+            let prods = JSON.parse(localStorage.getItem('products') || '[]');
+            
+            const existingIndex = prods.findIndex(p => p.id === id);
+            if(existingIndex > -1) {
+                prods[existingIndex] = { ...prods[existingIndex], name, category: cat, price, img, desc, pricingUnit: pUnit };
+            } else {
+                prods.push({ id, name, category: cat, price, img, desc, stock: 100, pricingUnit: pUnit });
+            }
+
+            localStorage.setItem('products', JSON.stringify(prods));
+            closeModal();
+            loadProducts();
+        }
+
+        function editProduct(id) {
+            const prods = JSON.parse(localStorage.getItem('products') || '[]');
+            const prod = prods.find(p => p.id === id);
+            if(!prod) return;
+
+            document.getElementById('prod-id').value = prod.id;
+            document.getElementById('prod-name').value = prod.name;
+            document.getElementById('prod-cat').value = prod.category;
+            document.getElementById('prod-price').value = prod.price;
+            document.getElementById('prod-punit').value = prod.pricingUnit || 'kg';
+            document.getElementById('prod-img').value = prod.img;
+            document.getElementById('prod-desc').value = prod.desc;
+
+            document.getElementById('modal-title').textContent = 'Edit Product';
+            document.getElementById('product-modal').classList.remove('hidden');
+            document.getElementById('product-modal').classList.add('flex');
+        }
+
+        function deleteProduct(id) {
+            if(confirm('Are you sure you want to delete this product?')) {
+                let prods = JSON.parse(localStorage.getItem('products') || '[]');
+                prods = prods.filter(p => p.id !== id);
+                localStorage.setItem('products', JSON.stringify(prods));
+                loadProducts();
+            }
+        }
+
+        // Initialize display
+        updateCartCount();
+        checkAuth();
+
+        // Notification System
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'orders' && sessionStorage.getItem('adminAuth') === 'true') {
+                const oldOrders = JSON.parse(e.oldValue || '[]');
+                const newOrders = JSON.parse(e.newValue || '[]');
+                
+                // If a new order is added
+                if (newOrders.length > oldOrders.length) {
+                    playAlertSound();
+                    showNotification('New Order Received!');
+                    // Refresh if viewing orders tab
+                    if(!document.getElementById('view-orders').classList.contains('hidden')) {
+                        loadOrders('All');
+                    }
+                    updatePendingCount();
+                }
+            }
+        });
+
+        function playAlertSound() {
+            try {
+                // A very short and reliable base64 ping sound
+                const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+                audio.play().catch(err => console.log('Audio play prevented', err));
+            } catch(e) { console.log(e); }
+        }
+
+        function showNotification(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-6 right-6 bg-primary text-white px-6 py-4 rounded-xl shadow-2xl font-bold z-[300] transition-opacity duration-300 flex items-center gap-3';
+            toast.innerHTML = `<span class="material-symbols-outlined">notifications_active</span> ${msg}`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(()=>toast.remove(), 300); }, 5000);
+        }
+    </script>
+
+    <!-- User Request: Footer added to every page with specific text and contacts -->
+    <footer class="bg-lowest border-t border-outline mt-16 pt-12 pb-8 w-full shrink-0">
+        <div class="max-w-7xl mx-auto px-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <!-- Left Details -->
+                <div class="text-center md:text-left">
+                    <p class="text-gray-500 text-sm mb-2 font-medium">Curating the finest provisions for the modern pantry. Delivered fresh, always.</p>
+                    <p class="text-gray-400 text-xs tracking-wide">© 2024 The Digital Orchard. Freshness Delivered.</p>
+                </div>
+                <!-- Right Links -->
+                <div class="flex flex-wrap justify-center gap-6 text-sm font-semibold text-gray-600">
+                    <a href="#" class="hover:text-primary transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-primary transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-primary transition-colors">Shipping Info</a>
+                    <a href="#" onclick="alert('Customer Support: 0773811326'); event.preventDefault();" class="hover:text-primary transition-colors">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
